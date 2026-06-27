@@ -29,9 +29,13 @@
 
 ## Current state
 **Last updated:** June 27, 2026
-**Working on:** Phase 1, synthetic data and retrieval.
-**Recently completed:** Phase 0 complete. Git initialized, folder structure created per code_patterns.md, Docker Compose stack (FastAPI + pgvector/pgvector:pg16), Alembic migration enabling pgvector extension and stub embeddings table, Pydantic-settings-based Claude API client stub (clinaiqa/llm/client.py), pytest.ini with harness marker, placeholder failing test confirmed running, GitHub Actions CI workflow.
+**Working on:** Phase 2, core evaluation harness.
+**Recently completed:** Phase 1 complete. Synthetic data module (21 healthy examples across CMS facility, clinical guideline, patient record types; 80+ adversarial examples covering all 8 archetypes A-H). Seeded split (seed=42, 25 percent held-out) with leak-free loader naming enforced (load_heldout_for_final_report). Migration 0002 adds reference_embeddings (Vector 384 dims), healthy_examples, adversarial_examples tables. Layer 1 retrieval pipeline: chunker, embedder (all-MiniLM-L6-v2 via sentence-transformers), pgvector store, grounder with configurable threshold, pipeline entry point, embed_reference_docs script. 20 harness tests green (split: 6, chunker: 6, grounder: 8). Placeholder test removed.
 **Blocked by:** None.
+
+## Run order for Phase 1 setup (after docker compose up and alembic upgrade head)
+1. python -m clinaiqa.data.seed_db          (populate healthy + adversarial tables)
+2. python -m clinaiqa.retrieval.embed_reference_docs  (embed reference corpus into pgvector)
 
 ## Roadmap
 

@@ -20,6 +20,18 @@ test-harness:
 metrics:
 	python -m clinaiqa.eval.report_metrics
 
+# Seed synthetic data (Phase 1)
+seed:
+	python -m clinaiqa.data.seed_db
+
+# Embed reference documents into pgvector (Phase 1, run after seed)
+embed:
+	python -m clinaiqa.retrieval.embed_reference_docs
+
+# Verify pgvector is working (Phase 0 smoke test)
+smoke:
+	python -m clinaiqa.db.smoke_test
+
 # Run the load test
 loadtest:
 	locust -f loadtest/locustfile.py

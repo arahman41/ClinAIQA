@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
 
+    # Retrieval (Layer 1)
+    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_dim: int = 384
+    grounding_threshold: float = 0.70  # cosine similarity below this = ungrounded
+    retrieval_top_k: int = 5
+
+    # Synthetic data split
+    split_seed: int = 42
+    heldout_fraction: float = 0.25
+
     @model_validator(mode="after")
     def _check_required(self) -> "Settings":
         if self.app_env == "development":
