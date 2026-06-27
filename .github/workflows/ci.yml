@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  harness:
+    name: Harness tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: clinaiqa
+          POSTGRES_PASSWORD: clinaiqa
+          POSTGRES_DB: clinaiqa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clinaiqa -d clinaiqa"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://clinaiqa:clinaiqa@localhost:5432/clinaiqa
+      DATABASE_URL_SYNC: postgresql+psycopg2://clinaiqa:clinaiqa@localhost:5432/clinaiqa
+      ANTHROPIC_API_KEY: stub-not-used-in-harness-tests
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run harness tests (CI gate)
+        run: pytest -m harness --tb=short

@@ -1,0 +1,36 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-clinaiqa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clinaiqa}
+      POSTGRES_DB: ${POSTGRES_DB:-clinaiqa}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clinaiqa} -d ${POSTGRES_DB:-clinaiqa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-clinaiqa}:${POSTGRES_PASSWORD:-clinaiqa}@db:5432/${POSTGRES_DB:-clinaiqa}
+      DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-clinaiqa}:${POSTGRES_PASSWORD:-clinaiqa}@db:5432/${POSTGRES_DB:-clinaiqa}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn clinaiqa.api.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  pgdata:
