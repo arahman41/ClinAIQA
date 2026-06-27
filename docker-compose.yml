@@ -22,7 +22,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-clinaiqa}:${POSTGRES_PASSWORD:-clinaiqa}@db:5432/${POSTGRES_DB:-clinaiqa}
       DATABASE_URL_SYNC: postgresql+psycopg2://${POSTGRES_USER:-clinaiqa}:${POSTGRES_PASSWORD:-clinaiqa}@db:5432/${POSTGRES_DB:-clinaiqa}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY must be set in your environment or .env file}
       APP_ENV: ${APP_ENV:-development}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     depends_on:

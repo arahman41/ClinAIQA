@@ -42,7 +42,13 @@ class ClinAIQALLMClient:
                 )
                 raw = message.content[0].text
                 return self._parse_json(raw)
-            except (anthropic.APIConnectionError, anthropic.RateLimitError, anthropic.APIStatusError) as exc:
+            except anthropic.APIStatusError as exc:
+                if exc.status_code < 500:
+                    raise LLMError(f"LLM call failed with non-retryable status {exc.status_code}: {exc}") from exc
+                last_exc = exc
+                if attempt < _MAX_RETRIES:
+                    time.sleep(_RETRY_DELAY_S * attempt)
+            except (anthropic.APIConnectionError, anthropic.RateLimitError) as exc:
                 last_exc = exc
                 if attempt < _MAX_RETRIES:
                     time.sleep(_RETRY_DELAY_S * attempt)
