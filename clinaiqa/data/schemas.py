@@ -59,4 +59,4 @@ class AdversarialExample(BaseModel):
     defect_span: str
     expected_flag_type: FlagType
     split_assignment: SplitAssignment = SplitAssignment.TUNING
-    split_seed: int = 42
+    split_seed: int | None = None

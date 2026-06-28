@@ -29,6 +29,12 @@ def assign_split(
     seed = seed if seed is not None else settings.split_seed
     heldout_fraction = heldout_fraction if heldout_fraction is not None else settings.heldout_fraction
 
+    if not (0.0 < heldout_fraction < 1.0):
+        raise ValueError(
+            f"heldout_fraction must be in (0, 1), got {heldout_fraction}. "
+            "Use a decimal fraction such as 0.25 for 25 percent."
+        )
+
     rng = random.Random(seed)
     assigned: list[AdversarialExample] = []
     for ex in examples:

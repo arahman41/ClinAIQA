@@ -5,6 +5,8 @@ the top-k most similar passages for a query embedding.
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
 
@@ -13,11 +15,16 @@ from clinaiqa.retrieval.embedder import embed
 from clinaiqa.settings import settings
 
 
-def _engine():
+@lru_cache(maxsize=None)
+def _engine(url: str):
+    return create_engine(url, echo=False)
+
+
+def _get_engine():
     url = settings.database_url_sync
     if not url:
         raise RuntimeError("DATABASE_URL_SYNC is not set.")
-    return create_engine(url, echo=False)
+    return _engine(url)
 
 
 def store_reference_chunks(
@@ -34,7 +41,7 @@ def store_reference_chunks(
     texts = [c["chunk_text"] for c in chunks]
     vectors = embed(texts)
 
-    engine = _engine()
+    engine = _get_engine()
     with Session(engine) as session:
         rows = []
         for chunk, vector in zip(chunks, vectors):
@@ -64,7 +71,7 @@ def retrieve_top_k(
     query_vec = embed_query(query_text)
     vec_literal = "[" + ",".join(f"{v:.8f}" for v in query_vec) + "]"
 
-    engine = _engine()
+    engine = _get_engine()
     with Session(engine) as session:
         rows = session.execute(
             text(
@@ -89,6 +96,6 @@ def retrieve_top_k(
     ]
 
 
-def embed_query(text: str) -> list[float]:
+def embed_query(query_text: str) -> list[float]:
     from clinaiqa.retrieval.embedder import embed_one
-    return embed_one(text)
+    return embed_one(query_text)

@@ -14,11 +14,11 @@ if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
 
-@lru_cache(maxsize=1)
-def _load_model() -> "SentenceTransformer":
+@lru_cache(maxsize=4)
+def _load_model(model_name: str) -> "SentenceTransformer":
     from sentence_transformers import SentenceTransformer
 
-    return SentenceTransformer(settings.embedding_model)
+    return SentenceTransformer(model_name)
 
 
 def embed(texts: list[str]) -> list[list[float]]:
@@ -28,7 +28,7 @@ def embed(texts: list[str]) -> list[list[float]]:
     """
     if not texts:
         raise ValueError("embed() called with an empty list of texts.")
-    model = _load_model()
+    model = _load_model(settings.embedding_model)
     vectors = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
     return [v.tolist() for v in vectors]
 

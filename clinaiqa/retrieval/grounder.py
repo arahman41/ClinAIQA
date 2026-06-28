@@ -32,7 +32,7 @@ class GroundingReport:
 
     @property
     def all_grounded(self) -> bool:
-        return all(s.grounded for s in self.sentences)
+        return bool(self.sentences) and all(s.grounded for s in self.sentences)
 
     @property
     def ungrounded_sentences(self) -> list[SentenceGroundingResult]:
@@ -52,7 +52,7 @@ def ground_sentence(
     """
     Retrieve top-k passages and score one sentence.
     Returns UNGROUNDED if no passages are retrieved or all are below threshold.
-    Raises RuntimeError if retrieval itself fails (fail toward flagging).
+    Raises sqlalchemy.exc.OperationalError if retrieval itself fails (fail toward flagging).
     """
     threshold = threshold if threshold is not None else settings.grounding_threshold
     top_k = top_k if top_k is not None else settings.retrieval_top_k

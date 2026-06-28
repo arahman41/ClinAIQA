@@ -6,10 +6,9 @@ Requires the Docker Compose stack to be up, migrations applied, and seed_db run 
 Safe to re-run: clears existing reference_embeddings before inserting.
 """
 
-import json
 import sys
 
-from sqlalchemy import create_engine, delete, text
+from sqlalchemy import create_engine, delete
 from sqlalchemy.orm import Session
 
 from clinaiqa.data.generate_healthy import generate_healthy_examples
@@ -55,14 +54,24 @@ def main() -> None:
     chunks = build_chunks(healthy_examples)
     print(f"Built {len(chunks)} chunks from {len(healthy_examples)} healthy examples.")
 
+    if not chunks:
+        print("ERROR: no chunks produced; aborting to avoid wiping the reference corpus.", file=sys.stderr)
+        sys.exit(1)
+
     texts = [c["chunk_text"] for c in chunks]
     print(f"Generating embeddings with model '{settings.embedding_model}'...")
     vectors = embed(texts)
 
+    if len(vectors) != len(chunks):
+        print(
+            f"ERROR: embed() returned {len(vectors)} vectors for {len(chunks)} chunks.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     engine = create_engine(url, echo=False)
     with Session(engine) as session:
         session.execute(delete(ReferenceEmbedding))
-        session.commit()
 
         rows = [
             ReferenceEmbedding(

@@ -46,4 +46,4 @@ class AdversarialExample(Base):
     defect_span: Mapped[str] = mapped_column(Text, nullable=False)
     expected_flag_type: Mapped[str] = mapped_column(Text, nullable=False)
     split_assignment: Mapped[str] = mapped_column(Text, nullable=False)
-    split_seed: Mapped[int] = mapped_column(Integer, nullable=False, default=42)
+    split_seed: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)

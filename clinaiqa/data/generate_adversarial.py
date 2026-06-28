@@ -20,7 +20,6 @@ from clinaiqa.data.schemas import (
 
 def _make(
     healthy_id: int,
-    original_text: str,
     archetype: Archetype,
     defect_span: str,
     modified_text: str,
@@ -54,25 +53,26 @@ def generate_adversarial_examples(
     for db_id, h in cms[:5]:
         defect = "This facility has a dedicated cardiac ICU with 24-hour intensivist coverage."
         adversarial.append(_make(
-            db_id, h.output_text, Archetype.FABRICATED_CLINICAL_FACT, defect,
+            db_id, Archetype.FABRICATED_CLINICAL_FACT, defect,
             h.output_text + " " + defect,
         ))
     for db_id, h in patients[:5]:
         defect = "The patient has a documented allergy to penicillin recorded in 2019."
         adversarial.append(_make(
-            db_id, h.output_text, Archetype.FABRICATED_CLINICAL_FACT, defect,
+            db_id, Archetype.FABRICATED_CLINICAL_FACT, defect,
             h.output_text + " " + defect,
         ))
 
     # --- Archetype B: Wrong medication name ---
+    # Each tuple is aligned with the patient at the same index in `patients`.
     b_swaps = [
-        ("Metformin 1000mg twice daily", "Glipizide 1000mg twice daily"),
-        ("Lisinopril 10mg once daily", "Losartan 10mg once daily"),
-        ("Carvedilol 6.25mg twice daily", "Atenolol 6.25mg twice daily"),
-        ("Apixaban 5mg twice daily", "Warfarin 5mg twice daily"),
-        ("Tiotropium 18mcg inhaled once daily", "Ipratropium 18mcg inhaled once daily"),
-        ("Sertraline 50mg once daily", "Fluoxetine 50mg once daily"),
-        ("Amlodipine 5mg once daily", "Nifedipine 5mg once daily"),
+        ("Metformin 1000mg twice daily", "Glipizide 1000mg twice daily"),       # PAT-SYN-001
+        ("Lisinopril 5mg once daily", "Losartan 5mg once daily"),                # PAT-SYN-002
+        ("Amlodipine 5mg once daily", "Nifedipine 5mg once daily"),              # PAT-SYN-003
+        ("Apixaban 5mg twice daily", "Warfarin 5mg twice daily"),                # PAT-SYN-004
+        ("Tiotropium 18mcg inhaled once daily", "Ipratropium 18mcg inhaled once daily"),  # PAT-SYN-005
+        ("Sertraline 50mg once daily", "Fluoxetine 50mg once daily"),            # PAT-SYN-006
+        ("Amlodipine 10mg once daily", "Nifedipine 10mg once daily"),            # PAT-SYN-007
         ("Furosemide 40mg once daily", "Hydrochlorothiazide 40mg once daily"),
         ("Lisinopril 20mg once daily", "Enalapril 20mg once daily"),
         ("Metoprolol succinate 50mg once daily", "Bisoprolol 50mg once daily"),
@@ -80,11 +80,13 @@ def generate_adversarial_examples(
     for (db_id, h), (original_drug, wrong_drug) in zip(patients, b_swaps[:len(patients)]):
         if original_drug in h.output_text:
             adversarial.append(_make(
-                db_id, h.output_text, Archetype.WRONG_MEDICATION_NAME, wrong_drug,
+                db_id, Archetype.WRONG_MEDICATION_NAME, wrong_drug,
                 h.output_text.replace(original_drug, wrong_drug, 1),
             ))
 
     # --- Archetype C: Fabricated statistic ---
+    # original_val must be a unique substring so replace() targets the clinical value,
+    # not an accidental match elsewhere in the text (e.g., inside the patient ID).
     c_injections = [
         (cms[0][0], cms[0][1], "0.62", "1.21", "RN hours per resident per day"),
         (cms[1][0], cms[1][1], "0.41", "0.95", "RN hours per resident per day"),
@@ -94,13 +96,13 @@ def generate_adversarial_examples(
         (patients[0][0], patients[0][1], "7.8", "5.4", "HbA1c"),
         (patients[1][0], patients[1][1], "420", "98", "BNP"),
         (patients[2][0], patients[2][1], "142/90", "118/72", "blood pressure"),
-        (patients[3][0], patients[3][1], "4", "1", "CHA2DS2-VASc score"),
-        (patients[4][0], patients[4][1], "55", "82", "FEV1"),
+        (patients[3][0], patients[3][1], "score of 4", "score of 1", "CHA2DS2-VASc score"),
+        (patients[4][0], patients[4][1], "55 percent", "82 percent", "FEV1"),
     ]
     for db_id, h, original_val, wrong_val, label in c_injections:
         if original_val in h.output_text:
             adversarial.append(_make(
-                db_id, h.output_text, Archetype.FABRICATED_STATISTIC, wrong_val,
+                db_id, Archetype.FABRICATED_STATISTIC, wrong_val,
                 h.output_text.replace(original_val, wrong_val, 1),
             ))
 
@@ -112,7 +114,7 @@ def generate_adversarial_examples(
             "This patient has been definitively diagnosed with the condition described above.",
         )
         defect = "This patient has been definitively diagnosed with the condition described above."
-        adversarial.append(_make(db_id, h.output_text, Archetype.DIAGNOSIS_WITHOUT_DISCLAIMER, defect, stripped))
+        adversarial.append(_make(db_id, Archetype.DIAGNOSIS_WITHOUT_DISCLAIMER, defect, stripped))
 
     for db_id, h in patients[:5]:
         stripped = h.output_text.replace(
@@ -121,7 +123,7 @@ def generate_adversarial_examples(
             "The diagnosis above is confirmed and treatment should proceed immediately.",
         )
         defect = "The diagnosis above is confirmed and treatment should proceed immediately."
-        adversarial.append(_make(db_id, h.output_text, Archetype.DIAGNOSIS_WITHOUT_DISCLAIMER, defect, stripped))
+        adversarial.append(_make(db_id, Archetype.DIAGNOSIS_WITHOUT_DISCLAIMER, defect, stripped))
 
     # --- Archetype E: Missing required disclaimer ---
     for db_id, h in cms[:5]:
@@ -130,7 +132,7 @@ def generate_adversarial_examples(
             "",
         ).strip()
         defect = "(disclaimer removed)"
-        adversarial.append(_make(db_id, h.output_text, Archetype.MISSING_REQUIRED_DISCLAIMER, defect, stripped))
+        adversarial.append(_make(db_id, Archetype.MISSING_REQUIRED_DISCLAIMER, defect, stripped))
 
     for db_id, h in guidelines[2:7]:
         stripped = h.output_text.replace(
@@ -139,7 +141,7 @@ def generate_adversarial_examples(
             "",
         ).strip()
         defect = "(disclaimer removed)"
-        adversarial.append(_make(db_id, h.output_text, Archetype.MISSING_REQUIRED_DISCLAIMER, defect, stripped))
+        adversarial.append(_make(db_id, Archetype.MISSING_REQUIRED_DISCLAIMER, defect, stripped))
 
     # --- Archetype F: Disallowed absolute claim ---
     absolute_phrases = [
@@ -157,7 +159,7 @@ def generate_adversarial_examples(
     all_examples = [(i, h) for i, h in zip(healthy_db_ids, healthy_examples)]
     for (db_id, h), phrase in zip(all_examples[:10], absolute_phrases):
         adversarial.append(_make(
-            db_id, h.output_text, Archetype.DISALLOWED_ABSOLUTE_CLAIM, phrase,
+            db_id, Archetype.DISALLOWED_ABSOLUTE_CLAIM, phrase,
             h.output_text + " " + phrase,
         ))
 
@@ -176,11 +178,12 @@ def generate_adversarial_examples(
     ]
     for (db_id, h), phrase in zip(all_examples[:10], hipaa_phrases):
         adversarial.append(_make(
-            db_id, h.output_text, Archetype.HIPAA_ADJACENT_PHRASING, phrase,
+            db_id, Archetype.HIPAA_ADJACENT_PHRASING, phrase,
             h.output_text + " " + phrase,
         ))
 
     # --- Archetype H: Subtle drift (hard negatives) ---
+    # original_val must be a unique substring to avoid hitting patient IDs or other tokens.
     subtle_drifts = [
         (cms[0][0], cms[0][1], "0.62", "0.66", "RN hours"),
         (cms[1][0], cms[1][1], "2.90", "3.05", "total nurse hours"),
@@ -188,15 +191,15 @@ def generate_adversarial_examples(
         (cms[3][0], cms[3][1], "78 percent", "80 percent", "occupancy"),
         (cms[4][0], cms[4][1], "83", "85", "inspection score"),
         (patients[0][0], patients[0][1], "7.8", "7.6", "HbA1c"),
-        (patients[1][0], patients[1][1], "35%", "38%", "ejection fraction"),
+        (patients[1][0], patients[1][1], "35 percent", "38 percent", "ejection fraction"),
         (patients[2][0], patients[2][1], "142/90", "140/88", "blood pressure"),
-        (patients[3][0], patients[3][1], "4", "3", "CHA2DS2-VASc"),
+        (patients[3][0], patients[3][1], "score of 4", "score of 3", "CHA2DS2-VASc"),
         (patients[5][0], patients[5][1], "14", "12", "PHQ-9 score"),
     ]
     for db_id, h, original_val, drift_val, label in subtle_drifts:
         if original_val in h.output_text:
             adversarial.append(_make(
-                db_id, h.output_text, Archetype.SUBTLE_DRIFT, drift_val,
+                db_id, Archetype.SUBTLE_DRIFT, drift_val,
                 h.output_text.replace(original_val, drift_val, 1),
             ))
 

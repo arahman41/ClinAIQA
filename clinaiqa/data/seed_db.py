@@ -38,7 +38,7 @@ def seed(engine) -> dict:
             session.add(row)
         session.flush()
 
-        db_healthy = session.query(HealthyExample).all()
+        db_healthy = session.query(HealthyExample).order_by(HealthyExample.id).all()
         healthy_db_ids = [row.id for row in db_healthy]
 
         adversarial_schemas: list[AdversarialSchema] = generate_adversarial_examples(
