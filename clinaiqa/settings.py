@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     grounding_threshold: float = 0.70  # cosine similarity below this = ungrounded
     retrieval_top_k: int = 5
 
+    # Evaluation (Layer 2)
+    hallucination_confidence_threshold: float = 0.70  # below this, a violation is not flagged
+
     # Synthetic data split
     split_seed: int = 42
     heldout_fraction: float = 0.25

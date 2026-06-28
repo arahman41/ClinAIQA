@@ -1,7 +1,7 @@
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Float, ForeignKey, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -47,3 +47,7 @@ class AdversarialExample(Base):
     expected_flag_type: Mapped[str] = mapped_column(Text, nullable=False)
     split_assignment: Mapped[str] = mapped_column(Text, nullable=False)
     split_seed: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+
+    # The parent healthy example. Layer 2 scoring needs its structured source_record
+    # to check the adversarial output against the ground-truth facts.
+    healthy_example: Mapped["HealthyExample"] = relationship()

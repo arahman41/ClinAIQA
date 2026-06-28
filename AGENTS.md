@@ -28,9 +28,10 @@
 - `docs/PRD-ClinAIQA-MVP.md`, the full PRD.
 
 ## Current state
-**Last updated:** June 27, 2026
-**Working on:** Phase 2, core evaluation harness.
-**Recently completed:** Phase 1 complete. Synthetic data module (21 healthy examples across CMS facility, clinical guideline, patient record types; 80+ adversarial examples covering all 8 archetypes A-H). Seeded split (seed=42, 25 percent held-out) with leak-free loader naming enforced (load_heldout_for_final_report). Migration 0002 adds reference_embeddings (Vector 384 dims), healthy_examples, adversarial_examples tables. Layer 1 retrieval pipeline: chunker, embedder (all-MiniLM-L6-v2 via sentence-transformers), pgvector store, grounder with configurable threshold, pipeline entry point, embed_reference_docs script. 20 harness tests green (split: 6, chunker: 6, grounder: 8). Placeholder test removed.
+**Last updated:** June 28, 2026
+**Working on:** Phase 3, compliance and explainability.
+**Recently completed:** Phase 2 evaluation harness built (branch phase-2-eval-harness). Layer 2 rubric with 4 hallucination-targeting properties (fact_grounding, medication_accuracy, statistic_accuracy, no_embellishment). Scorer sends one Claude call per property, gates violations on hallucination_confidence_threshold (0.70), propagates LLMError (fail toward flagging). EvalRunner combines Layer 1 grounding (via run_grounding_pipeline) and Layer 2 scoring into one EvalResult. Metrics module computes precision, recall, F1. DB loaders separate tuning from held-out access; AdversarialExample.healthy_example relationship added so Layer 2 can reach the parent source_record. Leak guard Pytest test forbids both held-out loaders in tuning modules. report_metrics.py is the sole held-out caller (run: make metrics). 57 harness tests green (Phase 1: 20, Phase 2: 37). Also applied 15 Phase 1 review fixes plus migration 0003 (JSON to JSONB, nullable split_seed) on master before branching.
+**Pending the live measurement run:** the real precision and recall numbers are NOT yet produced. That requires docker compose up, alembic upgrade head, make seed, make embed, a real ANTHROPIC_API_KEY, then make metrics. Report only what that run measures. Never projected.
 **Blocked by:** None.
 
 ## Run order for Phase 1 setup (after docker compose up and alembic upgrade head)
@@ -56,11 +57,11 @@ The week numbers below are a planning scaffold from the handover, not a fixed co
 - [ ] Build the Layer 1 retrieval pipeline: chunk output into claims, retrieve passages, score grounding per sentence.
 
 ### Phase 2: Core evaluation harness (Weeks 3 to 4)
-- [ ] Define the scoring rubric as input and expected-property pairs.
-- [ ] Integrate the Claude API for rubric scoring (Layer 2).
-- [ ] Construct the held-out adversarial test set in code, leak-free.
-- [ ] Produce the first real precision and recall numbers on the held-out set.
-- [ ] Write Pytest cases for the scoring logic, not just the API wrapper.
+- [x] Define the scoring rubric as input and expected-property pairs.
+- [x] Integrate the Claude API for rubric scoring (Layer 2).
+- [x] Construct the held-out adversarial test set in code, leak-free.
+- [ ] Produce the first real precision and recall numbers on the held-out set. (Harness is built and tested; the live measurement run is still pending. Run make metrics against a seeded DB with a real API key.)
+- [x] Write Pytest cases for the scoring logic, not just the API wrapper.
 
 ### Phase 3: Compliance and explainability (Weeks 5 to 6)
 - [ ] Build the Layer 3 compliance scanner: rule pack plus LLM-assisted phrase scanning, each flag carries a rule ID and severity.
