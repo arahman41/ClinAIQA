@@ -103,4 +103,5 @@ def test_report_str_is_em_dash_free():
     results = [_flagged("a"), _clean("b")]
     ground_truths = [True, False]
     report = compute_metrics(results, ground_truths)
-    assert "—" not in str(report)
+    em_dash = chr(0x2014)  # constructed at runtime so no literal em dash is in source
+    assert em_dash not in str(report)
