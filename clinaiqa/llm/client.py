@@ -7,7 +7,10 @@ import json
 import time
 from typing import Any
 
-import anthropic
+try:
+    import anthropic
+except ModuleNotFoundError:  # SDK is optional at import time so harness tests run without it.
+    anthropic = None  # type: ignore[assignment]
 
 from clinaiqa.settings import settings
 
@@ -22,6 +25,10 @@ class LLMError(Exception):
 
 class ClinAIQALLMClient:
     def __init__(self) -> None:
+        if anthropic is None:
+            raise LLMError(
+                "The 'anthropic' package is not installed. Run 'pip install -r requirements.txt'."
+            )
         if not settings.anthropic_api_key:
             raise LLMError("ANTHROPIC_API_KEY is not set. Check your .env or environment.")
         self._client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
