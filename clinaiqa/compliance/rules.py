@@ -128,6 +128,8 @@ _DISCLAIMER_PATTERNS = (
     r"seek (?:medical|professional) (?:advice|attention)",
     r"not (?:a|intended as)(?: medical)? (?:diagnosis|advice)",
     r"this is not a diagnosis",
+    r"does not constitute (?:a )?(?:medical advice|professional advice|advice|diagnosis)",
+    r"for informational purposes only",
 )
 
 

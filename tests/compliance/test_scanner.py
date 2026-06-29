@@ -69,6 +69,31 @@ def test_present_disclaimer_not_flagged():
 
 
 @pytest.mark.harness
+def test_does_not_constitute_medical_advice_disclaimer_recognized():
+    # Phrasing the healthy patient_record examples actually use must count as a
+    # present disclaimer (regression: DISC-001 was over-flagging these).
+    text = (
+        "Synthetic patient PAT-SYN-003 is a 58-year-old with hypertension. "
+        "This summary is derived from synthetic structured records and does not "
+        "constitute medical advice."
+    )
+    flags = scan_output(text, DocType.PATIENT_RECORD, [REQUIRED_DISCLAIMER_RULE])
+    assert flags == []
+
+
+@pytest.mark.harness
+def test_for_informational_purposes_only_disclaimer_recognized():
+    # Phrasing the healthy clinical_guideline examples actually use.
+    text = (
+        "Synthetic Clinical Guideline GL-HF-001 recommends ACE inhibitors. "
+        "This summary is for informational purposes only and does not constitute "
+        "medical advice."
+    )
+    flags = scan_output(text, DocType.CLINICAL_GUIDELINE, [REQUIRED_DISCLAIMER_RULE])
+    assert flags == []
+
+
+@pytest.mark.harness
 def test_definitive_diagnosis_without_disclaimer_is_flagged():
     text = "You have stage 2 hypertension and need immediate treatment."
     flags = scan_output(text, DocType.PATIENT_RECORD, [DIAGNOSIS_DISCLAIMER_RULE])
