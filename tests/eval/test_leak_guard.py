@@ -29,6 +29,7 @@ _GUARDED_MODULES = [
     "clinaiqa/eval/metrics.py",
     "clinaiqa/eval/db_loader.py",
     "clinaiqa/data/split.py",
+    "clinaiqa/explain/train_classifier.py",
 ]
 
 
