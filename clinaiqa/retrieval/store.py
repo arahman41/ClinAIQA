@@ -76,9 +76,9 @@ def retrieve_top_k(
         rows = session.execute(
             text(
                 "SELECT id, doc_id, doc_type, chunk_text, "
-                "1 - (embedding <=> :vec::vector) AS cosine_similarity "
+                "1 - (embedding <=> CAST(:vec AS vector)) AS cosine_similarity "
                 "FROM reference_embeddings "
-                "ORDER BY embedding <=> :vec::vector "
+                "ORDER BY embedding <=> CAST(:vec AS vector) "
                 "LIMIT :k"
             ),
             {"vec": vec_literal, "k": top_k},
