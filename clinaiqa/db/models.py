@@ -1,5 +1,7 @@
+from datetime import datetime
+
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Float, ForeignKey, Integer, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -51,3 +53,19 @@ class AdversarialExample(Base):
     # The parent healthy example. Layer 2 scoring needs its structured source_record
     # to check the adversarial output against the ground-truth facts.
     healthy_example: Mapped["HealthyExample"] = relationship()
+
+
+class AuditRecord(Base):
+    """A persisted audit verdict for one submitted output (the API result)."""
+
+    __tablename__ = "audit_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    doc_type: Mapped[str] = mapped_column(Text, nullable=False)
+    output_text: Mapped[str] = mapped_column(Text, nullable=False)
+    source_record: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    verdict: Mapped[str] = mapped_column(Text, nullable=False)  # "pass" or "fail"
+    flags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
