@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Evaluation (Layer 2)
     hallucination_confidence_threshold: float = 0.70  # below this, a violation is not flagged
 
+    # Compliance (Layer 3)
+    compliance_confidence_threshold: float = 0.70  # below this, an LLM compliance verdict is not flagged
+
     # Synthetic data split
     split_seed: int = 42
     heldout_fraction: float = 0.25

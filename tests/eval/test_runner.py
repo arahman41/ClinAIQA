@@ -8,7 +8,8 @@ from unittest.mock import patch
 
 import pytest
 
-from clinaiqa.data.schemas import FlagType
+from clinaiqa.compliance.rules import ComplianceFlag, Severity
+from clinaiqa.data.schemas import DocType, FlagType
 from clinaiqa.eval.runner import EvalResult, EvalRunner, Flag
 from clinaiqa.eval.scorer import PropertyVerdict
 from clinaiqa.retrieval.grounder import GroundingReport, SentenceGroundingResult
@@ -149,6 +150,52 @@ def test_both_l1_and_l2_flags_present_when_both_triggered():
     sources = {f.source for f in result.flags}
     assert "layer1" in sources
     assert "layer2" in sources
+
+
+@pytest.mark.harness
+def test_compliance_flag_causes_layer3_flag():
+    report = GroundingReport(sentences=[_grounded_result("Good sentence.")])
+    verdicts = [_clean_verdict("fact_grounding")]
+    cflags = [
+        ComplianceFlag(
+            rule_id="ABS-001",
+            severity=Severity.HIGH,
+            triggering_phrase="guaranteed",
+            reasoning="absolute claim",
+        )
+    ]
+
+    with (
+        patch("clinaiqa.eval.runner.run_grounding_pipeline", return_value=report),
+        patch("clinaiqa.eval.runner.score_output", return_value=verdicts),
+        patch("clinaiqa.eval.runner.scan_output", return_value=cflags),
+    ):
+        runner = EvalRunner()
+        result = runner.evaluate("Good sentence.", "{}", doc_type=DocType.PATIENT_RECORD)
+
+    assert result.flagged
+    layer3 = [f for f in result.flags if f.source == "layer3"]
+    assert len(layer3) == 1
+    assert layer3[0].rule_id == "ABS-001"
+    assert layer3[0].severity == Severity.HIGH.value
+    assert layer3[0].flag_type == FlagType.COMPLIANCE.value
+
+
+@pytest.mark.harness
+def test_layer3_skipped_when_no_doc_type():
+    report = GroundingReport(sentences=[_grounded_result("Good.")])
+    verdicts = [_clean_verdict("fact_grounding")]
+
+    with (
+        patch("clinaiqa.eval.runner.run_grounding_pipeline", return_value=report),
+        patch("clinaiqa.eval.runner.score_output", return_value=verdicts),
+        patch("clinaiqa.eval.runner.scan_output") as mock_scan,
+    ):
+        runner = EvalRunner()
+        result = runner.evaluate("Good.", "{}")
+
+    mock_scan.assert_not_called()
+    assert not result.flagged
 
 
 @pytest.mark.harness

@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from clinaiqa.compliance.scanner import scan_output
+from clinaiqa.data.schemas import DocType
 from clinaiqa.eval.rubric import LAYER2_RUBRIC, RubricProperty
 from clinaiqa.eval.scorer import PropertyVerdict, score_output
 from clinaiqa.retrieval.grounder import GroundingReport
@@ -23,10 +25,12 @@ from clinaiqa.retrieval.pipeline import run_grounding_pipeline
 @dataclass
 class Flag:
     flag_type: str
-    source: str          # "layer1" or "layer2"
+    source: str          # "layer1", "layer2", or "layer3"
     property_name: str | None
     triggering_phrase: str
     reasoning: str
+    rule_id: str | None = None      # set for layer3 compliance flags
+    severity: str | None = None     # set for layer3 compliance flags
 
 
 @dataclass
@@ -42,10 +46,16 @@ class EvalRunner:
     def __init__(self, rubric: list[RubricProperty] | None = None) -> None:
         self._rubric = rubric if rubric is not None else LAYER2_RUBRIC
 
-    def evaluate(self, output_text: str, source_record: str) -> EvalResult:
+    def evaluate(
+        self,
+        output_text: str,
+        source_record: str,
+        doc_type: DocType | None = None,
+    ) -> EvalResult:
         """
-        Run Layer 1 and Layer 2 on output_text.
-        Returns EvalResult. Raises LLMError if Layer 2 scoring fails (fail toward flagging).
+        Run Layer 1 and Layer 2 on output_text, plus Layer 3 when doc_type is given.
+        Returns EvalResult. Raises LLMError if Layer 2 or Layer 3 scoring fails
+        (fail toward flagging).
         """
         grounding_report = run_grounding_pipeline(output_text)
         property_verdicts = score_output(output_text, source_record, self._rubric)
@@ -72,6 +82,20 @@ class EvalRunner:
                         property_name=verdict.property_name,
                         triggering_phrase=verdict.triggering_phrase,
                         reasoning=verdict.reasoning,
+                    )
+                )
+
+        if doc_type is not None:
+            for cflag in scan_output(output_text, doc_type):
+                flags.append(
+                    Flag(
+                        flag_type=cflag.flag_type.value,
+                        source="layer3",
+                        property_name=None,
+                        triggering_phrase=cflag.triggering_phrase,
+                        reasoning=cflag.reasoning,
+                        rule_id=cflag.rule_id,
+                        severity=cflag.severity.value,
                     )
                 )
 

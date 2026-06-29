@@ -19,6 +19,7 @@ import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from clinaiqa.data.schemas import DocType
 from clinaiqa.eval.db_loader import (
     load_healthy_from_db,
     load_heldout_from_db_for_final_report,
@@ -28,10 +29,16 @@ from clinaiqa.eval.runner import EvalResult, EvalRunner
 from clinaiqa.settings import settings
 
 
-def _evaluate_one(runner: EvalRunner, output_text: str, source_record: str, label: str) -> EvalResult:
+def _evaluate_one(
+    runner: EvalRunner,
+    output_text: str,
+    source_record: str,
+    doc_type: DocType,
+    label: str,
+) -> EvalResult:
     """Evaluate one example, counting any failure as flagged (fail toward flagging)."""
     try:
-        return runner.evaluate(output_text, source_record)
+        return runner.evaluate(output_text, source_record, doc_type=doc_type)
     except Exception as exc:
         print(f"  [WARN] {label} scoring failed: {exc}. Counting as flagged.")
         return EvalResult(output_text=output_text, flagged=True)
@@ -66,8 +73,11 @@ def main() -> None:
         print("Running evaluation on adversarial examples (live Claude API calls)...")
         for i, ex in enumerate(heldout, 1):
             source_record = json.dumps(ex.healthy_example.source_record)
+            doc_type = DocType(ex.healthy_example.doc_type)
             results.append(
-                _evaluate_one(runner, ex.output_text, source_record, f"adversarial example {ex.id}")
+                _evaluate_one(
+                    runner, ex.output_text, source_record, doc_type, f"adversarial example {ex.id}"
+                )
             )
             ground_truths.append(True)
             if i % 5 == 0:
@@ -76,8 +86,11 @@ def main() -> None:
         print("Running evaluation on healthy examples...")
         for i, ex in enumerate(healthy, 1):
             source_record = json.dumps(ex.source_record)
+            doc_type = DocType(ex.doc_type)
             results.append(
-                _evaluate_one(runner, ex.output_text, source_record, f"healthy example {ex.id}")
+                _evaluate_one(
+                    runner, ex.output_text, source_record, doc_type, f"healthy example {ex.id}"
+                )
             )
             ground_truths.append(False)
             if i % 5 == 0:

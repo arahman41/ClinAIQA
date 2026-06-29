@@ -29,7 +29,7 @@
 
 ## Current state
 **Last updated:** June 28, 2026
-**Working on:** Phase 3, compliance and explainability.
+**Working on:** Phase 3, compliance and explainability. Layer 3 compliance scanner DONE (clinaiqa/compliance/: rules.py rule pack + scanner.py). Rules cover archetypes D/E/F/G: ABS-001 (absolute claims, deterministic), DISC-001 (missing required disclaimer, deterministic), DISC-002 (definitive diagnosis without disclaimer, deterministic, trigger-conditional), HIPAA-001 (HIPAA-adjacent phrasing, LLM-assisted, gated on compliance_confidence_threshold 0.70). Each ComplianceFlag carries rule_id + severity. Wired into EvalRunner as source="layer3" when doc_type is passed; Flag gained optional rule_id/severity. report_metrics now passes DocType so the held-out run exercises Layer 3. 71 harness tests green (was 57; +12 compliance, +2 runner). NEXT: Layer 4 explainability (phrase-level attribution for every flag + small SHAP-backed classifier on per-layer features; decision recorded below). Then FastAPI endpoints (Slice 3) + re-run held-out measurement.
 **Recently completed:** Phase 2 evaluation harness built (branch phase-2-eval-harness). Layer 2 rubric with 4 hallucination-targeting properties (fact_grounding, medication_accuracy, statistic_accuracy, no_embellishment). Scorer sends one Claude call per property, gates violations on hallucination_confidence_threshold (0.70), propagates LLMError (fail toward flagging). EvalRunner combines Layer 1 grounding (via run_grounding_pipeline) and Layer 2 scoring into one EvalResult. Metrics module computes precision, recall, F1. DB loaders separate tuning from held-out access; AdversarialExample.healthy_example relationship added so Layer 2 can reach the parent source_record. Leak guard Pytest test forbids both held-out loaders in tuning modules. report_metrics.py is the sole held-out caller (run: make metrics). 57 harness tests green (Phase 1: 20, Phase 2: 37). Also applied 15 Phase 1 review fixes plus migration 0003 (JSON to JSONB, nullable split_seed) on master before branching.
 **Live measurement run completed (2026-06-28):** Precision 90.0%, Recall 78.3%, F1 83.7% on held-out set (N=44: 23 adversarial, 21 healthy). 18 TP, 2 FP, 5 FN, 19 TN. Bug fixed: pgvector query used :vec::vector which psycopg2 misparses; replaced with CAST(:vec AS vector) in store.py.
 **Blocked by:** None.
@@ -60,11 +60,11 @@ The week numbers below are a planning scaffold from the handover, not a fixed co
 - [x] Define the scoring rubric as input and expected-property pairs.
 - [x] Integrate the Claude API for rubric scoring (Layer 2).
 - [x] Construct the held-out adversarial test set in code, leak-free.
-- [ ] Produce the first real precision and recall numbers on the held-out set. (Harness is built and tested; the live measurement run is still pending. Run make metrics against a seeded DB with a real API key.)
+- [x] Produce the first real precision and recall numbers on the held-out set. (Measured 2026-06-28: Precision 90.0%, Recall 78.3%, F1 83.7%, N=44.)
 - [x] Write Pytest cases for the scoring logic, not just the API wrapper.
 
 ### Phase 3: Compliance and explainability (Weeks 5 to 6)
-- [ ] Build the Layer 3 compliance scanner: rule pack plus LLM-assisted phrase scanning, each flag carries a rule ID and severity.
+- [x] Build the Layer 3 compliance scanner: rule pack plus LLM-assisted phrase scanning, each flag carries a rule ID and severity.
 - [ ] Build the Layer 4 explainability: phrase-level attribution for every flag; SHAP where a learned classifier is involved.
 - [ ] Solidify FastAPI endpoints: submit, audit, fetch record, pass-rate history.
 
